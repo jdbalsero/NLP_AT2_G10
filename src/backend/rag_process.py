@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
-import groq
-
+from groq import Groq
 from backend.embedding_generation import Embedding_Generation
+
 
 class rag_process:
     def __init__(self):
@@ -23,13 +23,15 @@ class rag_process:
     def query_documents(self, question, n_results=2):
         query_embedding = self.embedding_class.custom_embeddings([question])
 
-        results = self.embedding_class.collection.query(query_embeddings=query_embedding, n_results=n_results)
+        results = self.embedding_class.collection.query(
+            query_embeddings=query_embedding, n_results=n_results
+        )
 
         relevant_chunks = [doc for sublist in results["documents"] for doc in sublist]
         print("==== Returning relevant chunks ====")
-        
+
         return relevant_chunks
-    
+
     def generate_response(self, question, relevant_chunks):
         context = "\n\n".join(relevant_chunks)
         prompt = (
@@ -37,11 +39,12 @@ class rag_process:
             "Your task is to help companies navigate the complexities of compliance, accurate emission calculations, and industry-specific scope definitions. "
             "Use the following context to provide tailored, concise, and accurate guidance. Ensure the response is practical, actionable, and aligned with the most recent regulatory updates. "
             "If the answer is not available or unclear, state that you do not know. "
-            "Use five sentences maximum and keep the answer concise."
+            # "Use five sentences maximum and keep the answer concise."
             "\n\nContext:\n" + context + "\n\nQuestion:\n" + question
         )
-
-        client = groq.Client(api_key=os.getenv("GROQ_API_KEY"))
+        print(os.getenv("GROQ_API_KEY"))
+        print("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")
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
