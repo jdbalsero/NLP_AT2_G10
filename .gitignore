@@ -3,4 +3,4 @@ venv/
 my_env/
 *.pyc
 .DS_Store
-.DS_Store
+src/app/chroma_persistent_storage
