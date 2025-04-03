@@ -44,6 +44,7 @@ class GHGAssistant():
     ) -> bool:
         """
         takes any text and detects if the text is related to finance or law using a pretrained model
+        this might generate issues if the model is not downloaded
         """
         nlp = load("en_core_web_md")
         doc = nlp(sample_text)
