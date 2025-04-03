@@ -13,8 +13,11 @@ parent_dir = str(Path(current_dir).resolve().parents[0])
 sys.path.append(parent_dir)
 
 from backend.rag_process import rag_process
+from backend.ghg_assistant import GHGAssistant
 
 rag_class = rag_process()
+ai_assistant = GHGAssistant(
+    max_completion_tokens = 800) # that has memory and adds the disclaimer so far
 
 st.title("GHG Consultant")
 
@@ -37,7 +40,10 @@ if prompt := st.chat_input("Say Something"):
 
     # response = f"Echo: {prompt}"
     relevant_chunks = rag_class.query_documents(question=prompt)
-    response = rag_class.generate_response(question=prompt, relevant_chunks=relevant_chunks)
+    response = ai_assistant.generate_response(
+        user_prompt = prompt,
+        context = '\n\n'.join(relevant_chunks)
+    )
 
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
