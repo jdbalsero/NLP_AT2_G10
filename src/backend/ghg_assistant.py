@@ -38,6 +38,8 @@ class GHGAssistant():
         # Define additional legal and financial keywords
         self.legal_terms = ["lawsuit", "attorney", "plaintiff", "defendant", "malpractice", "contract", "liability", "sue", "court", "judge", "compliance", "regulation", "policy", "statute"]
         self.financial_terms = ["investment", "stocks", "bond", "revenue", "profit", "bankruptcy", "tax", "audit", "loan", "mortgage"]
+        # nlp model financial and legal topic detections
+        self.nlp = load("en_core_web_md")
     def is_legal_or_financial(
         self,
         sample_text : str
@@ -46,15 +48,14 @@ class GHGAssistant():
         takes any text and detects if the text is related to finance or law using a pretrained model
         this might generate issues if the model is not downloaded
         """
-        nlp = load("en_core_web_md")
-        doc = nlp(sample_text)
+        doc = self.nlp(sample_text)
         
         matcher = PhraseMatcher(
-            vocab = nlp.vocab,
+            vocab = self.nlp.vocab,
             attr = 'lower'
         )
         # add terms to the matcher
-        pattern = [nlp(term) for term in self.legal_terms + self.financial_terms]
+        pattern = [self.nlp(term) for term in self.legal_terms + self.financial_terms]
         matcher.add('legal_or_financial', pattern)
         flag = False
         for ent in doc.ents:
