@@ -26,7 +26,7 @@ class Embedding_Generation:
 
     def read_documents(self):
         current_wd = os.getcwd()
-        data_path = os.path.join(current_wd, "../../nlp/data")
+        data_path = os.path.join(current_wd, "nlp/data")
         raw_documents = os.listdir(data_path)
 
         documents = []

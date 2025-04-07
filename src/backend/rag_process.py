@@ -42,8 +42,6 @@ class rag_process:
             # "Use five sentences maximum and keep the answer concise."
             "\n\nContext:\n" + context + "\n\nQuestion:\n" + question
         )
-        print(os.getenv("GROQ_API_KEY"))
-        print("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")
         client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
         response = client.chat.completions.create(
