@@ -42,7 +42,7 @@ if prompt := st.chat_input("Say Something"):
     relevant_chunks = rag_class.query_documents(question=prompt)
     response = ai_assistant.generate_response(
         user_prompt = prompt,
-        context = '\n\n'.join(relevant_chunks)
+        context = '\n\n'.join([chunk for chunk in relevant_chunks if chunk is not None])
     )
 
     # Display assistant response in chat message container
