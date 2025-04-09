@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from groq import Groq
+from groq import AsyncGroq
 from backend.embedding_generation import Embedding_Generation
 
 
@@ -42,7 +42,7 @@ class rag_process:
 
         return relevant_chunks, metadatas
 
-    def generate_response(self, question, relevant_chunks, results_metadata):
+    async def generate_response(self, question, relevant_chunks, results_metadata):
         # Format context with source information
         formatted_chunks = []
         
@@ -65,8 +65,8 @@ class rag_process:
             "\n\nContext:\n" + context + "\n\nQuestion:\n" + question
         )
 
-        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        response = client.chat.completions.create(
+        client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
+        response = await client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "You are a helpful AI assistant."},
