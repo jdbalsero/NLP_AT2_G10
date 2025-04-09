@@ -1,5 +1,5 @@
 # #Async Callbacks workaround
-import asyncio
+
 # try:
 #     asyncio.get_running_loop()
 # except RuntimeError:
@@ -7,58 +7,44 @@ import asyncio
 
 # Import packages
 import streamlit as st
-import pandas as pd
+from streamlit_option_menu import option_menu
 import sys
 import os
 from pathlib import Path
-
-# import backend.rag_process
 
 # Set Python path
 current_dir = os.path.dirname(__file__)
 parent_dir = str(Path(current_dir).resolve().parents[0])
 sys.path.append(parent_dir)
 
+from ghg_consultant import display_ghg_consultant
+from company_form import display_company_form
 from backend.rag_process import rag_process
 
-rag_class = rag_process()
-
-st.title("GHG Consultant")
+if "rag_class" not in st.session_state:
+    st.session_state.rag_class = rag_process()
 
 # Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat messages from history on app rerun
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+st.session_state["company_info"] = None
 
-# React to user input
-if prompt := st.chat_input("Say Something"):
-    # Display user message in chat message container
-    with st.chat_message("user"):
-        st.markdown(prompt)
-    # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
+with st.sidebar:
+    selected = option_menu(
+        menu_title="Menu",
+        options=["GHG Consultant", "Company Form"],
+        icons=["chat", "file-earmark-text"],
+        default_index=0,
+    )
 
-    # Display assistant response in chat message container
-    with st.chat_message("assistant"):
-        placeholder = st.empty()
+# Display the selected page
+if selected == "GHG Consultant":
+    display_ghg_consultant()
+elif selected == "Company Form":
+    display_company_form()
 
-        # Get both chunks and metadata
-        relevant_chunks, results_metadata = rag_class.query_documents(question=prompt)
-
-        with st.spinner("🌍🍃 Generating Response..."):
-            try:
-                response = asyncio.run(rag_class.generate_response(
-                    question=prompt, 
-                    relevant_chunks=relevant_chunks, 
-                    results_metadata=results_metadata
-                ))
-            except Exception as e:
-                response = f"Error generating response: {str(e)}"
-
-        placeholder.markdown(response)
-    # Add assistant response to chat history
-    st.session_state.messages.append({"role": "assistant", "content": response})
+# Footer
+st.sidebar.markdown("---")
+st.sidebar.markdown("🧠 Powered by NLP Group 10")
+st.sidebar.markdown("🌍 Built with Streamlit")
