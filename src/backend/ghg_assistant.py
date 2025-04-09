@@ -40,6 +40,10 @@ class GHGAssistant():
         self.financial_terms = ["investment", "stocks", "bond", "revenue", "profit", "bankruptcy", "tax", "audit", "loan", "mortgage"]
         # nlp model financial and legal topic detections
         self.nlp = load("en_core_web_md")
+        
+        # define GHG keywords 
+        self.ghg_keywords = ["ghg", "greenhouse", "emission", "emissions", "carbon", "sustainability", "climate", "regulation", "regulatory", "compliance", "scope", "gas", "reporting", "mitigation", "policy", "energy"]
+    
     def is_legal_or_financial(
         self,
         sample_text : str
@@ -65,11 +69,27 @@ class GHGAssistant():
         if matches:
             flag = True
         return flag
+    
+    def is_related_to_ghg(
+        self,
+        user_prompt : str
+    ) -> bool:
+        """
+        check if the user prompt is related to GHG regulations
+        """
+        for key_word in self.ghg_keywords:
+            return any(keyword in user_prompt.lower() for keyword in self.ghg_keywords)
+        
     def generate_response(
         self,
         user_prompt : str,
         context : str = None
     ):
+        
+        # check if the user prompt is related to GHG topic
+        if not self.is_related_to_ghg(user_prompt):
+            return "This digital consultant specializes in Australian GHG emission regulations. Please rephrase your question to focus on topics such as compliance, emission calculations, or scope definitions related to GHG emissions."
+        
         client = Client(
             api_key = getenv('GROQ_API_KEY')
         )
