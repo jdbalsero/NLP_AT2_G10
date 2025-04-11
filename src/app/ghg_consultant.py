@@ -28,15 +28,20 @@ def display_ghg_consultant():
             relevant_chunks, results_metadata = rag_class.query_documents(question=prompt)
 
             with st.spinner("🌍🍃 Generating Response..."):
-                try:
-                    response = asyncio.run(rag_class.generate_response(
+                # try:
+                #     response = asyncio.run(rag_class.generate_response(
+                #         question=prompt, 
+                #         relevant_chunks=relevant_chunks, 
+                #         results_metadata=results_metadata
+                #     ))
+                # except Exception as e:
+                #     response = f"Error generating response: {str(e)}"
+                response = rag_class.generate_response(
                         question=prompt, 
                         relevant_chunks=relevant_chunks, 
                         results_metadata=results_metadata
-                    ))
-                except Exception as e:
-                    response = f"Error generating response: {str(e)}"
-
+                    )
+                
             placeholder.markdown(response)
         # Add assistant response to chat history
         st.session_state.messages.append({"role": "assistant", "content": response})

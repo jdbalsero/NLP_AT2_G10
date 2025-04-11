@@ -20,9 +20,13 @@ sys.path.append(parent_dir)
 from ghg_consultant import display_ghg_consultant
 from company_form import display_company_form
 from backend.rag_process import rag_process
+from backend.ghg_assistant import GHGAssistant
 
 if "rag_class" not in st.session_state:
     st.session_state.rag_class = rag_process()
+
+if "ghg_assistant" not in st.session_state:
+    st.session_state.ghg_assistant = GHGAssistant()
 
 # Initialize chat history
 if "messages" not in st.session_state:

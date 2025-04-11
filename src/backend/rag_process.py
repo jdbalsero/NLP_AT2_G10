@@ -2,7 +2,8 @@ import os
 from dotenv import load_dotenv
 from groq import AsyncGroq
 from backend.embedding_generation import Embedding_Generation
-
+import streamlit as st
+import asyncio
 
 class rag_process:
     def __init__(self):
@@ -42,7 +43,7 @@ class rag_process:
 
         return relevant_chunks, metadatas
 
-    async def generate_response(self, question, relevant_chunks, results_metadata):
+    def generate_response(self, question, relevant_chunks, results_metadata):
         # Format context with source information
         formatted_chunks = []
         
@@ -57,22 +58,32 @@ class rag_process:
             
         context = "\n\n---\n\n".join(formatted_chunks)  # Added separator for better readability
         
-        prompt = (
-            "You are a digital consultant specializing in Australia's evolving greenhouse gas (GHG) emission regulations. "
-            "Your task is to help companies navigate the complexities of compliance, accurate emission calculations, and industry-specific scope definitions. "
-            "Use the following context to provide tailored, concise, and accurate guidance. Ensure the response is practical, actionable, and aligned with the most recent regulatory updates. "
-            "If the answer is not available or unclear, state that you do not know. "
-            "\n\nContext:\n" + context + "\n\nQuestion:\n" + question
-        )
+        ghg_assistant = st.session_state.ghg_assistant
 
-        client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
-        response = await client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": "You are a helpful AI assistant."},
-                {"role": "user", "content": prompt},
-            ],
-        )
+        try:
+            answer = asyncio.run(ghg_assistant.generate_response(
+                user_prompt=question,
+                context=context
+            ))
+        except Exception as e:
+            return f"Error generating response: {str(e)}"
 
-        answer = response.choices[0].message.content
+        # prompt = (
+        #     "You are a digital consultant specializing in Australia's evolving greenhouse gas (GHG) emission regulations. "
+        #     "Your task is to help companies navigate the complexities of compliance, accurate emission calculations, and industry-specific scope definitions. "
+        #     "Use the following context to provide tailored, concise, and accurate guidance. Ensure the response is practical, actionable, and aligned with the most recent regulatory updates. "
+        #     "If the answer is not available or unclear, state that you do not know. "
+        #     "\n\nContext:\n" + context + "\n\nQuestion:\n" + question
+        # )
+
+        # client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
+        # response = await client.chat.completions.create(
+        #     model="llama-3.3-70b-versatile",
+        #     messages=[
+        #         {"role": "system", "content": "You are a helpful AI assistant."},
+        #         {"role": "user", "content": prompt},
+        #     ],
+        # )
+
+        # answer = response.choices[0].message.content
         return answer
