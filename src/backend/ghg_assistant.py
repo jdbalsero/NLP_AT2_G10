@@ -10,14 +10,25 @@ import spacy
 import os
 import streamlit as st
 from spacy import load
+from spacy.cli import download
 from spacy.matcher import PhraseMatcher
+import subprocess
 
 @st.cache_resource
 def load_spacy_model():
-    if not spacy.util.is_package("en_core_web_md"):
-        st.warning("Downloading spaCy model... (this happens once)")
-        spacy.cli.download("en_core_web_md")
-    return spacy.load("en_core_web_md")
+    try:
+        # Try loading first
+        return spacy.load("en_core_web_md")
+    except OSError:
+        st.warning("Downloading spaCy model... (This may take ~2 minutes)")
+        try:
+            # Attempt direct download
+            download("en_core_web_md")
+            return spacy.load("en_core_web_md")
+        except:
+            # Fallback to subprocess if pip fails
+            subprocess.run(["python", "-m", "spacy", "download", "en_core_web_md"])
+            return spacy.load("en_core_web_md")
 
 class GHGAssistant():
     
