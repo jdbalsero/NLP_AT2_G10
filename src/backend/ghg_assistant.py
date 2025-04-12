@@ -6,8 +6,18 @@
 # - is a valid question (evaluate whether the question is related to GHG topic) TBD
 from os import getenv
 from groq import AsyncGroq
+import spacy
+import os
+import streamlit as st
 from spacy import load
 from spacy.matcher import PhraseMatcher
+
+@st.cache_resource
+def load_spacy_model():
+    if not spacy.util.is_package("en_core_web_md"):
+        st.warning("Downloading spaCy model... (this happens once)")
+        spacy.cli.download("en_core_web_md")
+    return spacy.load("en_core_web_md")
 
 class GHGAssistant():
     
@@ -39,7 +49,7 @@ class GHGAssistant():
         self.legal_terms = ["lawsuit", "attorney", "plaintiff", "defendant", "malpractice", "contract", "liability", "sue", "court", "judge", "compliance", "regulation", "policy", "statute"]
         self.financial_terms = ["investment", "stocks", "bond", "revenue", "profit", "bankruptcy", "tax", "audit", "loan", "mortgage"]
         # nlp model financial and legal topic detections
-        self.nlp = load("en_core_web_md")
+        self.nlp = load_spacy_model()
         
         # define GHG keywords 
         self.ghg_keywords = ["ghg", "greenhouse", "emission", "emissions", "carbon", "sustainability", "climate", "regulation", "regulatory", "compliance", "scope", "gas", "reporting", "mitigation", "policy", "energy"]
