@@ -13,12 +13,6 @@ import os
 from pathlib import Path
 import subprocess
 
-st.write(
-    "Has environment variables been set:",
-    os.environ["GROQ_API_KEY"] == st.secrets["GROQ_API_KEY"],
-    os.environ["CHROMA_DB_HOST"] == st.secrets["CHROMA_DB_HOST"],
-)
-
 # Set Python path
 current_dir = os.path.dirname(__file__)
 parent_dir = str(Path(current_dir).resolve().parents[0])
