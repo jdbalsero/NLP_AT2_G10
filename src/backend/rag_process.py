@@ -32,14 +32,6 @@ class rag_process:
 
         relevant_chunks = results["documents"][0]
         metadatas = results["metadatas"][0]
-        
-        # print("==== Returning relevant chunks ====")
-        # print("\nDEBUG - Full metadata structure:")
-        # for i, metadata in enumerate(metadatas):
-        #     print(f"\nMetadata {i + 1}:")
-        #     print("Keys:", metadata.keys())
-        #     print("Full metadata:", metadata)
-            
 
         return relevant_chunks, metadatas
 
@@ -68,22 +60,4 @@ class rag_process:
         except Exception as e:
             return f"Error generating response: {str(e)}"
 
-        # prompt = (
-        #     "You are a digital consultant specializing in Australia's evolving greenhouse gas (GHG) emission regulations. "
-        #     "Your task is to help companies navigate the complexities of compliance, accurate emission calculations, and industry-specific scope definitions. "
-        #     "Use the following context to provide tailored, concise, and accurate guidance. Ensure the response is practical, actionable, and aligned with the most recent regulatory updates. "
-        #     "If the answer is not available or unclear, state that you do not know. "
-        #     "\n\nContext:\n" + context + "\n\nQuestion:\n" + question
-        # )
-
-        # client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
-        # response = await client.chat.completions.create(
-        #     model="llama-3.3-70b-versatile",
-        #     messages=[
-        #         {"role": "system", "content": "You are a helpful AI assistant."},
-        #         {"role": "user", "content": prompt},
-        #     ],
-        # )
-
-        # answer = response.choices[0].message.content
         return answer

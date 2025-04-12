@@ -1,7 +1,8 @@
 import pdfplumber
 import os
 from sentence_transformers import SentenceTransformer
-from chromadb import PersistentClient
+# from chromadb import PersistentClient
+import chromadb
 from chromadb.utils.embedding_functions import EmbeddingFunction
 import nltk
 from nltk.tokenize import sent_tokenize
@@ -21,9 +22,16 @@ class MyEmbeddingFunction(EmbeddingFunction):
 class Embedding_Generation:
     def __init__(self):
         self.custom_embeddings = MyEmbeddingFunction()
-        self.chroma_client = PersistentClient(path="chroma_persistent_storage")
+        self.chroma_client = chromadb.HttpClient(
+            host= os.getenv('CHROMA_DB_HOST'),
+            port=8000,
+            settings=chromadb.config.Settings(allow_reset=True)
+        )
+
+        # Get or create the collection with your custom embeddings
         self.collection = self.chroma_client.get_or_create_collection(
-            name="ghg_collection", embedding_function=self.custom_embeddings
+            name="ghg_collection",
+            embedding_function=self.custom_embeddings
         )
 
     def read_documents(self):

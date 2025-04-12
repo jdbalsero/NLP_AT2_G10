@@ -24,4 +24,4 @@ RUN mkdir -p chroma_persistent_storage
 RUN python -m spacy download en_core_web_md
 
 EXPOSE 8501
-CMD ["streamlit", "run", "src/app/ghg_app.py", "--server.fileWatcherType=none", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "src/app/app.py", "--server.fileWatcherType=none", "--server.port=8501", "--server.address=0.0.0.0"]
