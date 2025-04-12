@@ -1,6 +1,9 @@
 import pdfplumber
 import os
 from sentence_transformers import SentenceTransformer
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 # from chromadb import PersistentClient
 import chromadb
 from chromadb.utils.embedding_functions import EmbeddingFunction
