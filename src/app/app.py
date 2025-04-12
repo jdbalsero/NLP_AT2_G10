@@ -19,8 +19,6 @@ st.write(
     os.environ["CHROMA_DB_HOST"] == st.secrets["CHROMA_DB_HOST"],
 )
 
-subprocess.run(["python", "-m", "spacy", "download", "en_core_web_md"])
-
 # Set Python path
 current_dir = os.path.dirname(__file__)
 parent_dir = str(Path(current_dir).resolve().parents[0])
