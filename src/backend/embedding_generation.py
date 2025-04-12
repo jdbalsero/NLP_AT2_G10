@@ -28,7 +28,7 @@ class Embedding_Generation:
         self.chroma_client = chromadb.HttpClient(
             host= os.getenv('CHROMA_DB_HOST'),
             port=8000,
-            settings=chromadb.config.Settings(allow_reset=True)
+            # settings=chromadb.config.Settings(allow_reset=True)
         )
 
         # Get or create the collection with your custom embeddings
