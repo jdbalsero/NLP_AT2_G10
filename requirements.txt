@@ -14,4 +14,4 @@ streamlit-option-menu==0.4.0
 chromadb==0.4.24
 pytest==8.0.2 
 spacy==3.8.5
-sqlite3 >= 3.35.0
+pysqlite3-binary
