@@ -11,12 +11,15 @@ from streamlit_option_menu import option_menu
 import sys
 import os
 from pathlib import Path
+import subprocess
 
 st.write(
     "Has environment variables been set:",
     os.environ["GROQ_API_KEY"] == st.secrets["GROQ_API_KEY"],
     os.environ["CHROMA_DB_HOST"] == st.secrets["CHROMA_DB_HOST"],
 )
+
+subprocess.run(["python", "-m", "spacy", "download", "en_core_web_md"])
 
 # Set Python path
 current_dir = os.path.dirname(__file__)

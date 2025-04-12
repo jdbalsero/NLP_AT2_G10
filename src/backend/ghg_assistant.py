@@ -8,27 +8,8 @@ from os import getenv
 from groq import AsyncGroq
 import spacy
 import os
-import streamlit as st
 from spacy import load
-from spacy.cli import download
 from spacy.matcher import PhraseMatcher
-import subprocess
-
-@st.cache_resource
-def load_spacy_model():
-    try:
-        # Try loading first
-        return spacy.load("en_core_web_md")
-    except OSError:
-        st.warning("Downloading spaCy model... (This may take ~2 minutes)")
-        try:
-            # Attempt direct download
-            download("en_core_web_md")
-            return spacy.load("en_core_web_md")
-        except:
-            # Fallback to subprocess if pip fails
-            subprocess.run(["python", "-m", "spacy", "download", "en_core_web_md"])
-            return spacy.load("en_core_web_md")
 
 class GHGAssistant():
     
@@ -60,7 +41,7 @@ class GHGAssistant():
         self.legal_terms = ["lawsuit", "attorney", "plaintiff", "defendant", "malpractice", "contract", "liability", "sue", "court", "judge", "compliance", "regulation", "policy", "statute"]
         self.financial_terms = ["investment", "stocks", "bond", "revenue", "profit", "bankruptcy", "tax", "audit", "loan", "mortgage"]
         # nlp model financial and legal topic detections
-        self.nlp = load_spacy_model()
+        self.nlp = load("en_core_web_md")
         
         # define GHG keywords 
         self.ghg_keywords = ["ghg", "greenhouse", "emission", "emissions", "carbon", "sustainability", "climate", "regulation", "regulatory", "compliance", "scope", "gas", "reporting", "mitigation", "policy", "energy"]
