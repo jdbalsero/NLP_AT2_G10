@@ -128,3 +128,13 @@ class GHGAssistant():
             }
         )
         return ai_ouput
+    
+    def set_context_form(self, json_data):
+        self.conversation.append(
+            {
+                'role' : 'system',
+                'content' : f"""For the subsequent queries of the conversation, please add to your context the following information
+                provided by the user to provide better guidance based on company details and requirements.
+                Company Data:{json_data}"""
+            }
+        )
