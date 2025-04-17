@@ -6,6 +6,7 @@
 # - is a valid question (evaluate whether the question is related to GHG topic) TBD
 from os import getenv
 from groq import AsyncGroq
+from groq import Groq
 from spacy import load
 from spacy.matcher import PhraseMatcher
 
@@ -14,9 +15,9 @@ class GHGAssistant:
 
     def __init__(
         self,
-        model: str = "llama-3.3-70b-versatile",
-        temperature: float = 0.5,
-        max_completion_tokens: int = 800,
+        model : str = 'llama-3.3-70b-versatile',
+        temperature : float = 0.5,
+        max_completion_tokens : int = 400,
     ):
         self.model, self.temp, self.max_tokens = (
             model,
@@ -85,28 +86,15 @@ class GHGAssistant:
         ]
         # nlp model financial and legal topic detections
         self.nlp = load("en_core_web_md")
+        
+        # define GHG keywords 
+        self.ghg_keywords = ["ghg", "greenhouse", "emission", "emissions", "carbon", "sustainability", "climate", "regulation", "regulatory", "compliance", "scope", "gas", "reporting", "mitigation", "policy", "energy"]
 
-        # define GHG keywords
-        self.ghg_keywords = [
-            "ghg",
-            "greenhouse",
-            "emission",
-            "emissions",
-            "carbon",
-            "sustainability",
-            "climate",
-            "regulation",
-            "regulatory",
-            "compliance",
-            "scope",
-            "gas",
-            "reporting",
-            "mitigation",
-            "policy",
-            "energy",
-        ]
-
-    def is_legal_or_financial(self, sample_text: str) -> bool:
+    
+    def is_legal_or_financial(
+        self,
+        sample_text : str
+    ) -> bool:
         """
         takes any text and detects if the text is related to finance or law using a pretrained model
         this might generate issues if the model is not downloaded
@@ -128,18 +116,97 @@ class GHGAssistant:
         if matches:
             flag = True
         return flag
-
-    def is_related_to_ghg(self, user_prompt: str) -> bool:
+    
+    # def is_related_to_ghg(
+    #     self,
+    #     user_prompt : str
+    # ) -> bool:
+    #     """
+    #     check if the user prompt is related to GHG regulations
+    #     """
+    #     for key_word in self.ghg_keywords:
+    #         return any(keyword in user_prompt.lower() for keyword in self.ghg_keywords)
+        
+    def is_related_to_ghg(
+        self,
+        user_prompt : str
+    ) -> str:
         """
         check if the user prompt is related to GHG regulations
         """
-        for key_word in self.ghg_keywords:
-            return any(keyword in user_prompt.lower() for keyword in self.ghg_keywords)
+        system_prompt_second_model = """
+        
+        You are a helpful assistant that can answer questions about GHG regulations.
+        You are given a question and you need to determine if the question is related to GHG regulations.
+        If the question is related to GHG regulations, you need to return True.
+        If the question is not related to GHG regulations, you need to return False.
+        
+        
+        If the question is a greeting, a thank you, or a goodbye,s return True
+        REMEMBER: You are an advisor specialized in greenhouse gas (GHG) emissions. Your role is to help users understand concepts, policies, impacts, metrics, and strategies related to the reduction, measurement, and management of greenhouse gas emissions.
 
-    async def generate_response(self, user_prompt: str, context: str = None):
+        Your knowledge is strictly limited to the topic of GHG emissions. You are not allowed to generate code, write scripts, perform general technical calculations, answer unrelated questions (such as health, travel, recipes, general math, or any other field), or act as a general virtual assistant.
 
+        If a user asks a question outside your area of expertise or requests programming, calculations, or other types of technical assistance not directly related to GHG emissions, you must kindly respond that you cannot help with that and remind them that your purpose is to serve as a GHG advisor.
+        
+        Limit your answer to True or False. NOTHING ELSE.
+        """
+        
+        max_attempts = 3
+        attempt = 0
+        
+        while attempt < max_attempts:
+            client_2 = Groq(
+                api_key = getenv('GROQ_API_KEY')
+            )
+            messages_temp = self.conversation.copy()
+            messages_temp = messages_temp[-3:]
+            messages_temp.append(
+                {
+                    'role' : 'system',
+                    'content' : system_prompt_second_model
+                })
+            messages_temp.append(
+                {
+                    'role' : 'assistant',
+                    'content' : 'Please answer False or True to the next prompt: '
+                })
+            messages_temp.append(
+                {
+                    'role' : 'user',
+                    'content' : user_prompt
+                }
+            )
+            response = client_2.chat.completions.create(
+                messages = messages_temp,
+                model = 'llama3-70b-8192',
+                temperature = 0.5,
+                max_completion_tokens = 100
+            )
+            
+            result = response.choices[0].message.content.strip()
+            
+            # Check if the result is exactly 'True' or 'False'
+            if result == 'True' or result == 'False':
+                return result
+            
+            attempt += 1
+            print(f"Attempt {attempt}: Invalid response '{result}'. Retrying...")
+        
+        # If we've exhausted all attempts, return 'False' as a safe default
+        print("Maximum attempts reached. Defaulting to 'False'")
+        return 'False'
+    
+    async def generate_response(
+        self,
+        user_prompt : str,
+        context : str = None
+    ):
+        
         # check if the user prompt is related to GHG topic
-        if not self.is_related_to_ghg(user_prompt):
+        is_related = self.is_related_to_ghg(user_prompt)
+        print(f'##########################\n{is_related}\n##########################')
+        if is_related != 'True':
             return "This digital consultant specializes in Australian GHG emission regulations. Please rephrase your question to focus on topics such as compliance, emission calculations, or scope definitions related to GHG emissions."
 
         client = AsyncGroq(api_key=getenv("GROQ_API_KEY"))
@@ -155,15 +222,19 @@ class GHGAssistant:
             # adding the query from the user
             {"role": "user", "content": user_prompt}
         )
+        
+        messages_temp = self.conversation.copy()
+        messages_temp = messages_temp[-3:]  
         # generating the response
         response = await client.chat.completions.create(
-            messages=self.conversation,
-            model=self.model,
-            temperature=self.temp,
-            max_completion_tokens=self.max_tokens,
+            messages = messages_temp,
+            model = self.model,
+            temperature = self.temp,
+            max_completion_tokens = self.max_tokens
         )
         # retreiving the output
         ai_ouput = response.choices[0].message.content
+
         # check if the content el related to legal or financial terms
         if self.is_legal_or_financial(user_prompt):
             ai_ouput += self.disclaimer
