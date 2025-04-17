@@ -1,4 +1,13 @@
 import streamlit as st
+import pdfplumber
+from docx import Document
+from openpyxl import load_workbook
+import pandas as pd
+import json
+import tempfile
+import os
+from typing import Dict, List, Tuple
+from collections import defaultdict
 
 # Set page configuration (MUST be first Streamlit command)
 st.set_page_config(page_title="GHG Emissions Guidance Form", layout="wide")
@@ -221,6 +230,37 @@ def display_company_form():
     challenges = st.text_area(
         "Any specific challenges you’re facing?", value=st.session_state.challenges
     )
+    
+    uploaded_files = st.file_uploader(
+        "Upload Additional documents (PDF, DOCX, XLSX, CSV, TXT, or JSON)",
+        type=["pdf", "docx", "xlsx", "csv", "txt", "json"],
+        accept_multiple_files=True
+    )
+    
+    if uploaded_files:
+        # Initialize session state for results if not exists
+        if 'processed_files' not in st.session_state:
+            st.session_state.processed_files = defaultdict(dict)
+        
+        # Process files in batches
+        with st.spinner(f"Processing {len(uploaded_files)} files..."):
+            for file in uploaded_files:
+                if file.name in st.session_state.processed_files:
+                    continue  # Skip already processed files
+                
+                filename, text = process_single_file(file)
+                if not text.strip():
+                    st.session_state.processed_files[filename] = {
+                        'status': 'failed',
+                        'message': 'No text content found'
+                    }
+                    continue
+                
+                embeddings = st.session_state.rag_class.embedding_class.custom_embeddings([text])
+
+                st.session_state.processed_files[filename] = {
+                    'embeddings': embeddings
+                }
 
     # Submit Button
     if st.button("Submit Form"):
@@ -263,5 +303,78 @@ Company Info:
 Challenges: {challenges if challenges else "None provided"}
 """
             st.session_state.ghg_assistant.set_context_form(context)
+            if uploaded_files:
+                st.session_state.ghg_assistant.set_files_context(st.session_state.processed_files)
             st.success("Form submitted! Guidance is being prepared.")
             st.balloons()
+
+
+def extract_text_from_pdf(file):
+    text = ""
+    with pdfplumber.open(file) as pdf:
+        for page in pdf.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+    return text
+
+def extract_text_from_docx(file):
+    doc = Document(file)
+    return "\n".join([paragraph.text for paragraph in doc.paragraphs])
+
+def extract_text_from_xlsx(file):
+    text = ""
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+        tmp.write(file.read())
+        tmp_path = tmp.name
+    
+    try:
+        wb = load_workbook(tmp_path)
+        for sheet in wb:
+            for row in sheet.iter_rows(values_only=True):
+                row_text = " ".join([str(cell) for cell in row if cell is not None])
+                if row_text:
+                    text += row_text + "\n"
+    finally:
+        os.unlink(tmp_path)
+    return text
+
+def extract_text_from_csv(file):
+    df = pd.read_csv(file)
+    # Convert all columns to text and concatenate
+    return "\n".join(df.astype(str).apply(lambda row: " ".join(row), axis=1))
+
+def extract_text_from_txt(file):
+    return file.read().decode("utf-8")
+
+def extract_text_from_json(file):
+    data = json.load(file)
+    # Flatten JSON structure into text
+    if isinstance(data, list):
+        return " ".join(str(item) for item in data)
+    elif isinstance(data, dict):
+        return " ".join(f"{key}: {value}" for key, value in data.items())
+    else:
+        return str(data)
+    
+def process_single_file(file) -> Tuple[str, str]:
+    file_type = file.name.split(".")[-1].lower()
+    
+    try:
+        if file_type == "pdf":
+            return file.name, extract_text_from_pdf(file)
+        elif file_type == "docx":
+            return file.name, extract_text_from_docx(file)
+        elif file_type == "xlsx":
+            return file.name, extract_text_from_xlsx(file)
+        elif file_type == "csv":
+            return file.name, extract_text_from_csv(file)
+        elif file_type == "txt":
+            return file.name, extract_text_from_txt(file)
+        elif file_type == "json":
+            return file.name, extract_text_from_json(file)
+        else:
+            return file.name, ""
+    except Exception as e:
+        st.error(f"Error processing {file.name}: {str(e)}")
+        return file.name, ""

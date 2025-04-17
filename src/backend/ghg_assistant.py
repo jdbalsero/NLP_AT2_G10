@@ -180,3 +180,12 @@ class GHGAssistant:
                 Company Data:{json_data}""",
             }
         )
+
+    def set_files_context(self, files_context):
+        self.conversation.append(
+            {
+                "role":"system",
+                "content": f"""These are additional documents for the company context specifically
+                Documents Information (Dictionary of Embeddings): {files_context}"""   
+            }
+        )
