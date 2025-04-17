@@ -38,7 +38,7 @@ with st.sidebar:
     selected = option_menu(
         menu_title="Menu",
         options=["Company Form", "GHG Consultant"],
-        icons=["chat", "file-earmark-text"],
+        icons=["file-earmark-text", "chat"],
         default_index=0,
     )
 
