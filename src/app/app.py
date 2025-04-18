@@ -38,8 +38,8 @@ st.session_state["company_info"] = None
 with st.sidebar:
     selected = option_menu(
         menu_title="Menu",
-        options=["GHG Consultant", "Company Form"],
-        icons=["chat", "file-earmark-text"],
+        options=["Company Form", "GHG Consultant"],
+        icons=["file-earmark-text", "chat"],
         default_index=0,
     )
 
@@ -52,4 +52,4 @@ elif selected == "Company Form":
 # Footer
 st.sidebar.markdown("---")
 st.sidebar.markdown("🧠 Powered by NLP Group 10")
-st.sidebar.markdown("🌍 Built with Streamlit")
+st.sidebar.markdown("🧑‍💻 Built with Streamlit")

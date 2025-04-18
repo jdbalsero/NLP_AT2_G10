@@ -27,7 +27,7 @@ def display_ghg_consultant():
             # Get both chunks and metadata
             relevant_chunks, results_metadata = rag_class.query_documents(question=prompt)
 
-            with st.spinner("🌍🍃 Generating Response..."):
+            with st.spinner("🍃 Generating Response..."):
                 # try:
                 #     response = asyncio.run(rag_class.generate_response(
                 #         question=prompt, 
