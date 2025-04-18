@@ -155,6 +155,11 @@ def display_company_form():
 
     # Section 3: Operational Details
     st.subheader("3. Operational Details")
+    electricity = None
+    renewables = None
+    fleet_size = None
+    fuel_type = None
+
     if "Electricity use" in current_sources:
         st.markdown("**Energy Usage**")
         electricity = st.number_input(
@@ -230,37 +235,34 @@ def display_company_form():
     challenges = st.text_area(
         "Any specific challenges you’re facing?", value=st.session_state.challenges
     )
-    
+
     uploaded_files = st.file_uploader(
         "Upload Additional documents (PDF, DOCX, XLSX, CSV, TXT, or JSON)",
         type=["pdf", "docx", "xlsx", "csv", "txt", "json"],
-        accept_multiple_files=True
+        accept_multiple_files=True,
     )
-    
+
     if uploaded_files:
-        # Initialize session state for results if not exists
-        if 'processed_files' not in st.session_state:
+        if "processed_files" not in st.session_state:
             st.session_state.processed_files = defaultdict(dict)
-        
-        # Process files in batches
+
         with st.spinner(f"Processing {len(uploaded_files)} files..."):
             for file in uploaded_files:
                 if file.name in st.session_state.processed_files:
-                    continue  # Skip already processed files
-                
+                    continue
+
                 filename, text = process_single_file(file)
                 if not text.strip():
                     st.session_state.processed_files[filename] = {
-                        'status': 'failed',
-                        'message': 'No text content found'
+                        "status": "failed",
+                        "message": "No text content found",
                     }
                     continue
-                
-                embeddings = st.session_state.rag_class.embedding_class.custom_embeddings([text])
 
-                st.session_state.processed_files[filename] = {
-                    'embeddings': embeddings
-                }
+                embeddings = (
+                    st.session_state.rag_class.embedding_class.custom_embeddings([text])
+                )
+                st.session_state.processed_files[filename] = {"embeddings": embeddings}
 
     # Submit Button
     if st.button("Submit Form"):
@@ -282,7 +284,21 @@ def display_company_form():
             st.session_state.reference_support = reference_support
             st.session_state.challenges = challenges
 
-            # Context for assistant
+            # Prepare operational data for LLM context
+            operational_details = ""
+            if "Electricity use" in current_sources and electricity is not None:
+                operational_details += (
+                    f"- Annual Electricity Consumption: {electricity} kWh\n"
+                )
+                operational_details += f"- Renewable Energy Usage: {renewables}%\n"
+            if (
+                "Mobile combustion (fleets, transport)" in current_sources
+                and fleet_size is not None
+            ):
+                operational_details += f"- Fleet Size: {fleet_size} vehicles\n"
+                operational_details += f"- Fuel Type: {fuel_type}\n"
+
+            # LLM Context
             context = f"""
 The company operates in Australia** and is subject to Australia's evolving climate reporting regulations, effective 2025.
 
@@ -290,6 +306,7 @@ The user has selected **{regulatory_basis}** as the preferred framework for guid
 {"Please include reference section at the end with the specific document and framework use URL links for documents." if reference_support else "Do not include reference section at the end.."}
 
 Company Info:
+- Company Name: {company_name}
 - Industry: {industry}
 - Company Size: {company_size}
 - Revenue Range: {revenue_range}
@@ -301,10 +318,15 @@ Company Info:
 - Location: {location}
 
 Challenges: {challenges if challenges else "None provided"}
+
+Operational Details:
+{operational_details if operational_details else "Not provided"}
 """
             st.session_state.ghg_assistant.set_context_form(context)
             if uploaded_files:
-                st.session_state.ghg_assistant.set_files_context(st.session_state.processed_files)
+                st.session_state.ghg_assistant.set_files_context(
+                    st.session_state.processed_files
+                )
             st.success("Form submitted! Guidance is being prepared.")
             st.balloons()
 
@@ -318,16 +340,18 @@ def extract_text_from_pdf(file):
                 text += page_text + "\n"
     return text
 
+
 def extract_text_from_docx(file):
     doc = Document(file)
     return "\n".join([paragraph.text for paragraph in doc.paragraphs])
+
 
 def extract_text_from_xlsx(file):
     text = ""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
         tmp.write(file.read())
         tmp_path = tmp.name
-    
+
     try:
         wb = load_workbook(tmp_path)
         for sheet in wb:
@@ -339,27 +363,29 @@ def extract_text_from_xlsx(file):
         os.unlink(tmp_path)
     return text
 
+
 def extract_text_from_csv(file):
     df = pd.read_csv(file)
-    # Convert all columns to text and concatenate
     return "\n".join(df.astype(str).apply(lambda row: " ".join(row), axis=1))
+
 
 def extract_text_from_txt(file):
     return file.read().decode("utf-8")
 
+
 def extract_text_from_json(file):
     data = json.load(file)
-    # Flatten JSON structure into text
     if isinstance(data, list):
         return " ".join(str(item) for item in data)
     elif isinstance(data, dict):
         return " ".join(f"{key}: {value}" for key, value in data.items())
     else:
         return str(data)
-    
+
+
 def process_single_file(file) -> Tuple[str, str]:
     file_type = file.name.split(".")[-1].lower()
-    
+
     try:
         if file_type == "pdf":
             return file.name, extract_text_from_pdf(file)
