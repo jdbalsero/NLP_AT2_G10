@@ -29,8 +29,8 @@ def display_company_form():
         "reference_support": False,
         "challenges": "",
         "submitted": False,
-        "fleet_size": 0,
-        "annual_electricity": 0
+        "fleet_size": None,
+        "electricity": None
     }
 
     # Initialize session state
@@ -112,9 +112,9 @@ def display_company_form():
             ),
         )
         location = st.selectbox(
-             "Location (State/Territory)*",
-            ["", "NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"]
-         )
+              "Location (State/Territory)",
+             ["", "NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"]
+        )
 
     # Section 2: Emissions Profile
     st.subheader("2. Emissions Profile")
@@ -143,7 +143,7 @@ def display_company_form():
     )
 
     current_sources = st.multiselect(
-        "Key Emission Sources*",
+        "Key Emission Sources",
         [
             "Stationary combustion (boilers, generators)",
             "Mobile combustion (fleets, transport)",
@@ -167,14 +167,16 @@ def display_company_form():
 
     if "Electricity use" in current_sources:
         st.markdown("**Energy Usage**")
-        electricity = st.number_input(
-            "Annual Electricity Consumption (kWh)", min_value=0,  value=st.session_state.annual_electricity
+        electricity = st.text_input(
+            "Annual Electricity Consumption (kWh)", placeholder="Please insert the Annual Electricity Consumption in kWh", 
+            value=st.session_state.electricity
         )
         renewables = st.slider("Renewable Energy Usage (%)", 0, 100, 0)
 
     if "Mobile combustion (fleets, transport)" in current_sources:
         st.markdown("**Fleet / Transport**")
-        fleet_size = st.number_input("Number of Vehicles", min_value=0,  value=st.session_state.fleet_size)
+        fleet_size = st.text_input("Number of Vehicles", placeholder="Please insert the number of vehicles",
+                                   value= st.session_state.fleet_size)
         fuel_type = st.selectbox(
             "Primary Fuel Type", ["Petrol", "Diesel", "Electric", "Hybrid"]
         )
@@ -182,7 +184,7 @@ def display_company_form():
     # Section 4: Goals
     st.subheader("4. Goals & Preferences")
     objective = st.selectbox(
-        "Primary Objective*",
+        "Primary Objective",
         ["Compliance only", "Reduction strategy", "Net-zero planning", "Educational"],
         index=(
             0
@@ -271,9 +273,26 @@ def display_company_form():
 
     # Submit Button
     if st.button("Submit Form"):
-        if not industry or not company_size:
+        valid_form = True
+        if not industry or not company_size or not emission_scopes:
+            valid_form = False
             st.error("Please fill required fields (*)")
-        else:
+
+        if "Electricity use" in current_sources and electricity is not None:
+            try:
+                electricity = float(electricity)
+            except:
+                valid_form = False
+                st.error("Annual Electricity Consumption needs to be a number.")
+        
+        if "Mobile combustion (fleets, transport)" in current_sources and fleet_size is not None:
+            try:
+                fleet_size = int(fleet_size)
+            except:
+                valid_form = False
+                st.error("Fleet size needs to be a number.")
+
+        if valid_form:
             # Save to session state
             st.session_state.submitted = True
             st.session_state.company_name = company_name
@@ -288,8 +307,8 @@ def display_company_form():
             st.session_state.regulatory_basis = regulatory_basis
             st.session_state.reference_support = reference_support
             st.session_state.challenges = challenges
-            st.session_state.annual_electricity = electricity
             st.session_state.fleet_size = fleet_size
+            st.session_state.electricity = electricity
 
             # Prepare operational data for LLM context
             operational_details = ""
