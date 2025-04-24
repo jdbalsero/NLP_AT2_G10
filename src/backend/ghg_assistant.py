@@ -17,7 +17,7 @@ class GHGAssistant:
         self,
         model: str = "llama-3.3-70b-versatile",
         temperature: float = 0.5,
-        max_completion_tokens: int = 400,
+        max_completion_tokens: int = 800,
     ):
         self.model, self.temp, self.max_tokens = (
             model,
@@ -46,6 +46,7 @@ class GHGAssistant:
             - Default to Australian regulatory requirements
             - Reference other frameworks (e.g., U.S. EPA, ISO 14064, GHG Protocol, ESRS, API Compendium) **only if explicitly requested**
             - Indicate if data is insufficient or unclear — do not guess
+            - Answer concisely but contextually. Include all relevant information from the context without omitting or summarizing key points. Do not exclude details simply for brevity; instead, express them using clear and efficient language. Your response should be short, but not at the cost of completeness or nuance.
 
             Your goal is to act as a trustworthy, regulation-aware emissions advisor grounded in Australia’s 2025 climate reporting framework.
             """
@@ -202,7 +203,6 @@ class GHGAssistant:
 
         # check if the user prompt is related to GHG topic
         is_related = self.is_related_to_ghg(user_prompt)
-        print(f"##########################\n{is_related}\n##########################")
         if is_related != "True":
             return "This digital consultant specializes in Australian GHG emission regulations. Please rephrase your question to focus on topics such as compliance, emission calculations, or scope definitions related to GHG emissions."
 
@@ -221,10 +221,12 @@ class GHGAssistant:
         )
 
         messages_temp = self.conversation.copy()
-        messages_temp = messages_temp[-3:]
+        messages_system = list(filter(lambda l: l.get('role') == "system", messages_temp))
+        messages_no_system = list(filter(lambda l: l.get('role') != "system", messages_temp))
+        messages_no_system = messages_no_system[-3:]
         # generating the response
         response = await client.chat.completions.create(
-            messages=messages_temp,
+            messages=messages_system + messages_no_system,
             model=self.model,
             temperature=self.temp,
             max_completion_tokens=self.max_tokens,
