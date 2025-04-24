@@ -13,23 +13,6 @@ from collections import defaultdict
 st.set_page_config(page_title="GHG Emissions Guidance Form", layout="wide")
 
 def display_company_form():
-    # Hide the stepper arrows
-    hide_number_input_arrows = """
-        <style>
-        /* Hide number input arrows */
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
-        </style>
-    """
-
-    st.markdown(hide_number_input_arrows, unsafe_allow_html=True)
 
     # Define default values
     defaults = {
@@ -46,6 +29,8 @@ def display_company_form():
         "reference_support": False,
         "challenges": "",
         "submitted": False,
+        "fleet_size": 0,
+        "annual_electricity": 0
     }
 
     # Initialize session state
@@ -183,13 +168,13 @@ def display_company_form():
     if "Electricity use" in current_sources:
         st.markdown("**Energy Usage**")
         electricity = st.number_input(
-            "Annual Electricity Consumption (kWh)", min_value=0
+            "Annual Electricity Consumption (kWh)", min_value=0,  value=st.session_state.annual_electricity
         )
         renewables = st.slider("Renewable Energy Usage (%)", 0, 100, 0)
 
     if "Mobile combustion (fleets, transport)" in current_sources:
         st.markdown("**Fleet / Transport**")
-        fleet_size = st.number_input("Number of Vehicles", min_value=0)
+        fleet_size = st.number_input("Number of Vehicles", min_value=0,  value=st.session_state.fleet_size)
         fuel_type = st.selectbox(
             "Primary Fuel Type", ["Petrol", "Diesel", "Electric", "Hybrid"]
         )
@@ -303,6 +288,8 @@ def display_company_form():
             st.session_state.regulatory_basis = regulatory_basis
             st.session_state.reference_support = reference_support
             st.session_state.challenges = challenges
+            st.session_state.annual_electricity = electricity
+            st.session_state.fleet_size = fleet_size
 
             # Prepare operational data for LLM context
             operational_details = ""
