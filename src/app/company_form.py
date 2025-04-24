@@ -109,7 +109,10 @@ def display_company_form():
                 ].index(st.session_state.company_size)
             ),
         )
-        location = "NSW"
+        location = st.selectbox(
+              "Location (State/Territory)*",
+             ["", "NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"]
+        )
 
     # Section 2: Emissions Profile
     st.subheader("2. Emissions Profile")
@@ -322,11 +325,10 @@ Challenges: {challenges if challenges else "None provided"}
 Operational Details:
 {operational_details if operational_details else "Not provided"}
 """
-            st.session_state.ghg_assistant.set_context_form(context)
             if uploaded_files:
-                st.session_state.ghg_assistant.set_files_context(
-                    st.session_state.processed_files
-                )
+                st.session_state.ghg_assistant.set_context_form(context, st.session_state.processed_files)
+            else:
+                 st.session_state.ghg_assistant.set_context_form(context)
             st.success("Form submitted! Guidance is being prepared.")
             st.balloons()
 

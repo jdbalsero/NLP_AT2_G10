@@ -34,7 +34,7 @@ class GHGAssistant:
         # If the answer is not available or unclear, state that you do not know.
         # """
 
-        self.system_config = """You are a digital GHG emissions consultant focused on Australian companies operating under Australia's evolving climate disclosure regulations, effective from 2025. All companies you assist are based in New South Wales (NSW), Australia.
+        self.system_config = """You are a digital GHG emissions consultant focused on Australian companies operating under Australia's evolving climate disclosure regulations, effective from 2025. All companies you assist are based in Australia.
             Your core role is to guide companies through:
             - Regulatory compliance under Australian laws (e.g., Treasury Act 2024, ASRS, NGER Scheme)
             - Emission calculation practices across Scope 1, Scope 2, and Scope 3
@@ -239,21 +239,18 @@ class GHGAssistant:
         self.conversation.append({"role": "assistant", "content": ai_ouput})
         return ai_ouput
 
-    def set_context_form(self, json_data):
+    def set_context_form(self, json_data, files_context=None):
+        content_prompt = f"""For the subsequent queries of the conversation, please add to your context the following information
+                 provided by the user to provide better guidance based on company details and requirements.
+                 Company Data:{json_data}"""
+         
+        if files_context != None:
+             content_prompt += f"""\n These are additional documents uploaded by the company to obtain tailored guidance.
+                 Documents Information: {files_context}"""
+             
         self.conversation.append(
             {
                 "role": "system",
-                "content": f"""For the subsequent queries of the conversation, please add to your context the following information
-                provided by the user to provide better guidance based on company details and requirements.
-                Company Data:{json_data}""",
-            }
-        )
-
-    def set_files_context(self, files_context):
-        self.conversation.append(
-            {
-                "role": "system",
-                "content": f"""These are additional documents for the company context specifically
-                Documents Information (Dictionary of Embeddings): {files_context}""",
+                "content": content_prompt,
             }
         )
