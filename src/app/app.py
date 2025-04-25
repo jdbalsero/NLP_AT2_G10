@@ -11,6 +11,7 @@ from streamlit_option_menu import option_menu
 import sys
 import os
 from pathlib import Path
+import subprocess
 
 # Set Python path
 current_dir = os.path.dirname(__file__)

@@ -1,6 +1,9 @@
 import pdfplumber
 import os
 from sentence_transformers import SentenceTransformer
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 # from chromadb import PersistentClient
 import chromadb
 from chromadb.utils.embedding_functions import EmbeddingFunction
@@ -25,7 +28,7 @@ class Embedding_Generation:
         self.chroma_client = chromadb.HttpClient(
             host= os.getenv('CHROMA_DB_HOST'),
             port=8000,
-            settings=chromadb.config.Settings(allow_reset=True)
+            # settings=chromadb.config.Settings(allow_reset=True)
         )
 
         # Get or create the collection with your custom embeddings

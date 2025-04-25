@@ -12,8 +12,8 @@ from collections import defaultdict
 # Set page configuration (MUST be first Streamlit command)
 st.set_page_config(page_title="GHG Emissions Guidance Form", layout="wide")
 
-
 def display_company_form():
+
     # Define default values
     defaults = {
         "company_name": "",
@@ -351,7 +351,8 @@ Operational Details:
             if uploaded_files:
                 st.session_state.ghg_assistant.set_context_form(context, st.session_state.processed_files)
             else:
-                 st.session_state.ghg_assistant.set_context_form(context)
+                st.session_state.ghg_assistant.set_context_form(context)
+
             st.success("Form submitted! Guidance is being prepared.")
             st.balloons()
 
