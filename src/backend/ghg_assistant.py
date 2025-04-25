@@ -230,8 +230,7 @@ class GHGAssistant:
         response = await client.chat.completions.create(
             messages=messages_system + messages_no_system,
             model=self.model,
-            temperature=self.temp,
-            max_completion_tokens=self.max_tokens,
+            temperature=self.temp
         )
         # retreiving the output
         ai_ouput = response.choices[0].message.content
