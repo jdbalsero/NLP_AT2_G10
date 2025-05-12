@@ -4,6 +4,8 @@
 # - generates response (user_prompt, context)
 # - evaluate user prompt (if the question has any relation to the topic)
 # - is a valid question (evaluate whether the question is related to GHG topic) TBD
+import spacy
+import os
 from os import getenv
 from groq import AsyncGroq
 from groq import Groq
