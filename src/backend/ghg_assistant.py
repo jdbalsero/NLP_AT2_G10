@@ -229,7 +229,7 @@ class GHGAssistant:
             messages=messages_system + messages_no_system,
             model=self.model,
             temperature=self.temp,
-            max_completion_tokens=self.max_tokens,
+            # max_completion_tokens=self.max_tokens,
         )
         # retreiving the output
         ai_ouput = response.choices[0].message.content
