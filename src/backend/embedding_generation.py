@@ -8,8 +8,8 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import chromadb
 from chromadb.utils.embedding_functions import EmbeddingFunction
 import nltk
-from nltk.tokenize import sent_tokenize
-nltk.download('punkt')
+# from nltk.tokenize import sent_tokenize
+# nltk.download('punkt')
 
 class MyEmbeddingFunction(EmbeddingFunction):
     def __init__(self):
