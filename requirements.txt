@@ -11,7 +11,7 @@ sentence-transformers==4.0.1
 transformers==4.50.1
 groq==0.20.0
 streamlit-option-menu==0.4.0 
-chromadb==0.4.24
+chromadb==1.0.12
 pytest==8.0.2 
 spacy==3.8.5
 python-docx>=1.1.2
