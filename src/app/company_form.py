@@ -9,10 +9,6 @@ import os
 from typing import Dict, List, Tuple
 from collections import defaultdict
 
-# Set page configuration (MUST be first Streamlit command)
-st.set_page_config(page_title="GHG Emissions Guidance Form", layout="wide")
-
-
 def display_company_form():
     # Define default values
     defaults = {
@@ -30,7 +26,7 @@ def display_company_form():
         "challenges": "",
         "submitted": False,
         "fleet_size": None,
-        "electricity": None
+        "electricity": None,
     }
 
     # Initialize session state
@@ -112,8 +108,8 @@ def display_company_form():
             ),
         )
         location = st.selectbox(
-              "Location (State/Territory)",
-             ["", "NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"]
+            "Location (State/Territory)",
+            ["", "NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"],
         )
 
     # Section 2: Emissions Profile
@@ -168,15 +164,19 @@ def display_company_form():
     if "Electricity use" in current_sources:
         st.markdown("**Energy Usage**")
         electricity = st.text_input(
-            "Annual Electricity Consumption (kWh)", placeholder="Please insert the Annual Electricity Consumption in kWh", 
-            value=st.session_state.electricity
+            "Annual Electricity Consumption (kWh)",
+            placeholder="Please insert the Annual Electricity Consumption in kWh",
+            value=st.session_state.electricity,
         )
         renewables = st.slider("Renewable Energy Usage (%)", 0, 100, 0)
 
     if "Mobile combustion (fleets, transport)" in current_sources:
         st.markdown("**Fleet / Transport**")
-        fleet_size = st.text_input("Number of Vehicles", placeholder="Please insert the number of vehicles",
-                                   value= st.session_state.fleet_size)
+        fleet_size = st.text_input(
+            "Number of Vehicles",
+            placeholder="Please insert the number of vehicles",
+            value=st.session_state.fleet_size,
+        )
         fuel_type = st.selectbox(
             "Primary Fuel Type", ["Petrol", "Diesel", "Electric", "Hybrid"]
         )
@@ -284,8 +284,11 @@ def display_company_form():
             except:
                 valid_form = False
                 st.error("Annual Electricity Consumption needs to be a number.")
-        
-        if "Mobile combustion (fleets, transport)" in current_sources and fleet_size is not None:
+
+        if (
+            "Mobile combustion (fleets, transport)" in current_sources
+            and fleet_size is not None
+        ):
             try:
                 fleet_size = int(fleet_size)
             except:
@@ -349,9 +352,11 @@ Operational Details:
 {operational_details if operational_details else "Not provided"}
 """
             if uploaded_files:
-                st.session_state.ghg_assistant.set_context_form(context, st.session_state.processed_files)
+                st.session_state.ghg_assistant.set_context_form(
+                    context, st.session_state.processed_files
+                )
             else:
-                 st.session_state.ghg_assistant.set_context_form(context)
+                st.session_state.ghg_assistant.set_context_form(context)
             st.success("Form submitted! Guidance is being prepared.")
             st.balloons()
 

@@ -7,10 +7,15 @@
 import spacy
 import os
 from os import getenv
+from pathlib import Path
+
+from dotenv import load_dotenv
 from groq import AsyncGroq
-from groq import Groq
 from spacy import load
 from spacy.matcher import PhraseMatcher
+
+
+BASE_DIR = Path(__file__).resolve().parents[2]
 
 
 class GHGAssistant:
@@ -30,6 +35,7 @@ class GHGAssistant:
             "\n\n**Disclaimer:** Be mindful that this is an AI assistant. "
             "Please consult with a professional before proceeding."
         )
+        load_dotenv(BASE_DIR / ".env")
         # self.system_config = """You are a digital consultant specializing in Australia's evolving greenhouse gas (GHG) emission regulations.
         # Your task is to help companies navigate the complexities of compliance, accurate emission calculations, and industry-specific scope definitions.
         # Ensure the response is practical, actionable, and aligned with the most recent regulatory updates.
@@ -88,7 +94,8 @@ class GHGAssistant:
             "mortgage",
         ]
         # nlp model financial and legal topic detections
-        self.nlp = load("en_core_web_md")
+        self.nlp = None
+        self.matcher = None
 
         # define GHG keywords
         self.ghg_keywords = [
@@ -109,18 +116,37 @@ class GHGAssistant:
             "policy",
             "energy",
         ]
+        self.casual_keywords = [
+            "hi",
+            "hello",
+            "hey",
+            "thanks",
+            "thank you",
+            "bye",
+            "goodbye",
+        ]
+
+    def _get_nlp(self):
+        if self.nlp is None:
+            self.nlp = load("en_core_web_md")
+        return self.nlp
+
+    def _get_matcher(self):
+        nlp = self._get_nlp()
+        if self.matcher is None:
+            self.matcher = PhraseMatcher(vocab=nlp.vocab, attr="lower")
+            pattern = [nlp(term) for term in self.legal_terms + self.financial_terms]
+            self.matcher.add("legal_or_financial", pattern)
+        return self.matcher
 
     def is_legal_or_financial(self, sample_text: str) -> bool:
         """
         takes any text and detects if the text is related to finance or law using a pretrained model
         this might generate issues if the model is not downloaded
         """
-        doc = self.nlp(sample_text)
-
-        matcher = PhraseMatcher(vocab=self.nlp.vocab, attr="lower")
-        # add terms to the matcher
-        pattern = [self.nlp(term) for term in self.legal_terms + self.financial_terms]
-        matcher.add("legal_or_financial", pattern)
+        nlp = self._get_nlp()
+        doc = nlp(sample_text)
+        matcher = self._get_matcher()
         flag = False
         for ent in doc.ents:
             if (
@@ -147,58 +173,16 @@ class GHGAssistant:
         """
         check if the user prompt is related to GHG regulations
         """
-        system_prompt_second_model = """
-        
-        You are are reviewing the context of a Green House and Gas or Environmental Sustainability Governance conversation
-        You are given a question and you need to determine if the question is related to Green House and Gas Emissions Regulations or Environmental Sustainability Governance.
-        If the question is related to Green House and Gas Emissions Regulations or Environmental Sustainability Governance, you need to return True.
-        If the question is not related to Green House and Gas Emissions Regulations or Environmental Sustainability Governance, you need to return False.
-        
-        If the question is a greeting, a thank you, or a goodbye,s return True
-        REMEMBER: You are an advisor specialized in greenhouse gas (GHG) emissions. Your role is to help users understand concepts, policies, impacts, metrics, and strategies related to the reduction, measurement, and management of greenhouse gas emissions.
+        prompt_normalized = user_prompt.strip().lower()
+        if not prompt_normalized:
+            return "False"
 
-        Your knowledge is strictly limited to the topic of GHG emissions. You are not allowed to generate code, write scripts, perform general technical calculations, answer unrelated questions (such as health, travel, recipes, general math, or any other field), or act as a general virtual assistant.
+        if any(keyword in prompt_normalized for keyword in self.casual_keywords):
+            return "True"
 
-        If a user asks a question outside your area of expertise or requests programming, calculations, or other types of technical assistance not directly related to GHG emissions, you must kindly respond False as you cannot help with that and remind them that your purpose is to serve as a GHG advisor.
-        
-        Limit your answer to True or False. NOTHING ELSE.
-        """
+        if any(keyword in prompt_normalized for keyword in self.ghg_keywords):
+            return "True"
 
-        max_attempts = 3
-        attempt = 0
-
-        while attempt < max_attempts:
-            client_2 = Groq(api_key=getenv("GROQ_API_KEY"))
-            messages_temp = self.conversation.copy()
-            messages_temp = messages_temp[-3:]
-            messages_temp.append(
-                {"role": "system", "content": system_prompt_second_model}
-            )
-            messages_temp.append(
-                {
-                    "role": "assistant",
-                    "content": "Please answer False or True to the next prompt: ",
-                }
-            )
-            messages_temp.append({"role": "user", "content": user_prompt})
-            response = client_2.chat.completions.create(
-                messages=messages_temp,
-                model="llama3-70b-8192",
-                temperature=0.5,
-                max_completion_tokens=100,
-            )
-
-            result = response.choices[0].message.content.strip()
-
-            # Check if the result is exactly 'True' or 'False'
-            if result == "True" or result == "False":
-                return result
-
-            attempt += 1
-            print(f"Attempt {attempt}: Invalid response '{result}'. Retrying...")
-
-        # If we've exhausted all attempts, return 'False' as a safe default
-        print("Maximum attempts reached. Defaulting to 'False'")
         return "False"
 
     async def generate_response(self, user_prompt: str, context: str = None):
@@ -208,7 +192,13 @@ class GHGAssistant:
         if is_related != "True":
             return "This digital consultant specializes in Australian GHG emission regulations. Please rephrase your question to focus on topics such as compliance, emission calculations, or scope definitions related to GHG emissions."
 
-        client = AsyncGroq(api_key=getenv("GROQ_API_KEY"))
+        api_key = getenv("GROQ_API_KEY")
+        if not api_key:
+            return "Missing `GROQ_API_KEY`. Add it to your local environment or `.env` file."
+        if not api_key.startswith("gsk_"):
+            return "The configured `GROQ_API_KEY` format looks invalid. Update your `.env` or exported environment variable with a real Groq API key."
+
+        client = AsyncGroq(api_key=api_key)
         # initialize the conversation
         self.conversation.append(
             # configuration of the response
@@ -227,12 +217,21 @@ class GHGAssistant:
         messages_no_system = list(filter(lambda l: l.get('role') != "system", messages_temp))
         messages_no_system = messages_no_system[-3:]
         # generating the response
-        response = await client.chat.completions.create(
-            messages=messages_system + messages_no_system,
-            model=self.model,
-            temperature=self.temp,
-            # max_completion_tokens=self.max_tokens,
-        )
+        try:
+            response = await client.chat.completions.create(
+                messages=messages_system + messages_no_system,
+                model=self.model,
+                temperature=self.temp,
+                max_completion_tokens=self.max_tokens,
+            )
+        except Exception as exc:
+            error_message = str(exc)
+            if "invalid_api_key" in error_message or "Invalid API Key" in error_message:
+                return (
+                    "The configured `GROQ_API_KEY` is invalid. "
+                    "Replace it in `.env` and restart Streamlit."
+                )
+            return f"Groq request failed: {error_message}"
         # retreiving the output
         ai_ouput = response.choices[0].message.content
 

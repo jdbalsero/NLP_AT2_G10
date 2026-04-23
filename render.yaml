@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: ghg-digital-consultant
+    runtime: docker
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false

@@ -1,60 +1,68 @@
-import pdfplumber
 import os
+from pathlib import Path
+
+import chromadb
+import nltk
+import pdfplumber
+from chromadb.utils.embedding_functions import EmbeddingFunction
+from nltk.tokenize import sent_tokenize
 from sentence_transformers import SentenceTransformer
 
-__import__("pysqlite3")
-import sys
 
-sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
-# from chromadb import PersistentClient
-import chromadb
-from chromadb.utils.embedding_functions import EmbeddingFunction
-import nltk
-
-# from nltk.tokenize import sent_tokenize
-# nltk.download('punkt')
+BASE_DIR = Path(__file__).resolve().parents[2]
+DATA_DIR = BASE_DIR / "src" / "data"
+CHROMA_DIR = BASE_DIR / "chroma_persistent_storage"
 
 
 class MyEmbeddingFunction(EmbeddingFunction):
     def __init__(self):
-        self.model = SentenceTransformer("sentence-transformers/all-MiniLM-L12-v2")
+        self.model = None
+
+    def _get_model(self):
+        if self.model is None:
+            self.model = SentenceTransformer("sentence-transformers/all-MiniLM-L12-v2")
+        return self.model
 
     def __call__(self, input_texts):
         if isinstance(input_texts, str):
             input_texts = [input_texts]
-        embeddings = self.model.encode(input_texts, convert_to_numpy=True)
+        embeddings = self._get_model().encode(input_texts, convert_to_numpy=True)
         return embeddings.tolist()
 
 
 class Embedding_Generation:
     def __init__(self):
         self.custom_embeddings = MyEmbeddingFunction()
-        # self.chroma_client = chromadb.HttpClient(
-        #     host= os.getenv('CHROMA_DB_HOST'),
-        #     port=8000,
-        #     settings=chromadb.config.Settings(allow_reset=True)
-        # )
+        self.chroma_client = chromadb.PersistentClient(path=str(CHROMA_DIR))
 
-        self.chroma_client = chromadb.HttpClient(
-            host=os.getenv("CHROMA_DB_HOST"),
-            port=8000,
-            settings=chromadb.Settings(chroma_api_impl="rest"),
-        )
-
-        # Get or create the collection with your custom embeddings
         self.collection = self.chroma_client.get_or_create_collection(
             name="ghg_collection", embedding_function=self.custom_embeddings
         )
 
+    @staticmethod
+    def _ensure_nltk_tokenizer():
+        try:
+            nltk.data.find("tokenizers/punkt")
+        except LookupError:
+            nltk.download("punkt", quiet=True)
+
+    def has_embeddings(self):
+        return self.collection.count() > 0
+
     def read_documents(self):
-        current_wd = os.getcwd()
-        data_path = os.path.join(current_wd, "src/data")
-        raw_documents = os.listdir(data_path)
+        if not DATA_DIR.exists():
+            raise FileNotFoundError(f"Data directory not found: {DATA_DIR}")
+
+        raw_documents = sorted(
+            file_name
+            for file_name in os.listdir(DATA_DIR)
+            if file_name.lower().endswith(".pdf")
+        )
 
         documents = []
 
         for file_name in raw_documents:
-            with pdfplumber.open(os.path.join(data_path, file_name)) as pdf:
+            with pdfplumber.open(DATA_DIR / file_name) as pdf:
                 document_text = []
                 for page_num, page in enumerate(pdf.pages, 1):
                     # Extract text with layout preservation
@@ -101,7 +109,7 @@ class Embedding_Generation:
         return documents
 
     def split_text(self, text, chunk_size=1000, chunk_overlap=200):
-        # First, split into sentences
+        self._ensure_nltk_tokenizer()
         sentences = sent_tokenize(text)
 
         chunks = []

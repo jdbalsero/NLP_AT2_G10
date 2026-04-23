@@ -16,12 +16,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN python -c "import nltk; nltk.download('punkt')"
 
 COPY src/ src/
-COPY .env .
-
-RUN mkdir -p chroma_persistent_storage
+COPY chroma_persistent_storage/ chroma_persistent_storage/
 
 # Install Spacy model 
 RUN python -m spacy download en_core_web_md
 
 EXPOSE 8501
-CMD ["streamlit", "run", "src/app/app.py", "--server.fileWatcherType=none", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["sh", "-c", "streamlit run src/app/app.py --server.fileWatcherType=none --server.port=${PORT:-8501} --server.address=0.0.0.0"]

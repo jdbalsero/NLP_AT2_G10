@@ -1,17 +1,21 @@
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
-from groq import AsyncGroq
 from backend.embedding_generation import Embedding_Generation
 import streamlit as st
 import asyncio
 
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+
+
 class rag_process:
     def __init__(self):
-        load_dotenv()
+        load_dotenv(BASE_DIR / ".env")
         self.embedding_class = Embedding_Generation()
 
     def run_embedding_process(self):
-
         documents = self.embedding_class.read_documents()
         chunks = self.embedding_class.chunk_generation(documents)
         generation = self.embedding_class.generate_embeddings(chunked_documents=chunks)
@@ -22,6 +26,9 @@ class rag_process:
             return "Error in embedding generation"
 
     def query_documents(self, question, n_results=2):
+        if not self.embedding_class.has_embeddings():
+            return [], []
+
         query_embedding = self.embedding_class.custom_embeddings([question])
 
         results = self.embedding_class.collection.query(
@@ -36,6 +43,12 @@ class rag_process:
         return relevant_chunks, metadatas
 
     def generate_response(self, question, relevant_chunks, results_metadata):
+        if not relevant_chunks:
+            return (
+                "The local knowledge base is empty right now. "
+                "Generate embeddings first or restore the `chroma_persistent_storage/` folder."
+            )
+
         # Format context with source information
         formatted_chunks = []
         

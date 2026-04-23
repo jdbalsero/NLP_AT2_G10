@@ -7,6 +7,20 @@ def display_ghg_consultant():
 
     st.header("GHG Consultant")
 
+    if not rag_class.embedding_class.has_embeddings():
+        st.warning(
+            "No local embeddings were found in `chroma_persistent_storage/`. "
+            "Restore the folder or generate embeddings from the PDFs below."
+        )
+        if st.button("Generate embeddings locally"):
+            with st.spinner("Building embeddings from source PDFs..."):
+                result = rag_class.run_embedding_process()
+            if result == "Process Complete":
+                st.success("Embeddings generated successfully.")
+                st.rerun()
+            st.error(result)
+        return
+
     # Display chat messages from history on app rerun
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):  
